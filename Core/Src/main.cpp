@@ -22,10 +22,11 @@
 #include "cmsis_os.h"
 #include "fatfs.h"
 
-#include <TimeRTC.h>
-
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+
+#include "fatfs_sd.h"
+#include <TimeRTC.h>
 
 /* USER CODE END Includes */
 
@@ -58,6 +59,17 @@ osThreadId defaultTaskHandle;
 osThreadId sdTaskHandle;
 /* USER CODE BEGIN PV */
 
+FATFS fs;  // file system
+FIL fil; // File
+FILINFO fno;
+FRESULT fresult;  // result
+UINT br, bw;  // File read/write count
+
+/**** capacity related *****/
+FATFS *pfs;
+DWORD fre_clust;
+uint32_t total, free_space;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -70,7 +82,7 @@ static void MX_USART1_UART_Init(void);
 static void MX_RTC_Init(void);
 
 void StartDefaultTask(void const * argument);
-void startSdtTask(void const * argument);
+void startSdTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -468,7 +480,7 @@ void StartDefaultTask(void const * argument)
 }
 
 
-void startSdtTask(void const * argument) {
+void startSdTask(void const * argument) {
 
 	while(1) {
 
