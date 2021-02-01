@@ -26,14 +26,16 @@ I2CReader* I2CReader::getInstance() {
 	return _instance;
 }
 
-void I2CReader::init(I2C_HandleTypeDef *i2c) {
-	hi2c1 = i2c;
+void I2CReader::init(I2C_HandleTypeDef *i2c, SensorReader* sensorReader) {
+	osSemaphoreWait(sensorReader, osWaitForever);
+	sensorReader->init(i2c);
+	osSemaphoreRelease(sensorReader);
 }
 
 
-float I2CReader::getData(SensorReader* sensorReader) {
+float I2CReader::getData(I2C_HandleTypeDef *i2c, SensorReader* sensorReader) {
 	osSemaphoreWait(sensorReader, osWaitForever);
-	float value = sensorReader->read(hi2c1);
+	float value = sensorReader->read(i2c);
 	osSemaphoreRelease(sensorReader);
 	return value;
 }

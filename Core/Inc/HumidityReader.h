@@ -29,6 +29,7 @@ public:
 	HumidityReader();
 	virtual ~HumidityReader();
 	float read(I2C_HandleTypeDef *i2c);
+	void init(I2C_HandleTypeDef *i2c);
 private:
 	float calcH(uint16_t rh);
 	uint8_t crcChecksum(uint8_t data[], uint8_t no_of_bytes, uint8_t checksum);

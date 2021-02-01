@@ -14,6 +14,9 @@ TemperatureReader::TemperatureReader() {
 TemperatureReader::~TemperatureReader() {
 }
 
+void TemperatureReader::init(I2C_HandleTypeDef *i2c) {
+
+}
 
 float TemperatureReader::read(I2C_HandleTypeDef *i2c) {
 //	uint8_t checksum;

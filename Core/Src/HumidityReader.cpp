@@ -16,6 +16,10 @@ HumidityReader::~HumidityReader() {
 	// TODO Auto-generated destructor stub
 }
 
+void HumidityReader::init(I2C_HandleTypeDef *i2c) {
+
+}
+
 float HumidityReader::read(I2C_HandleTypeDef *i2c) {
 
 //	uint8_t checksum;

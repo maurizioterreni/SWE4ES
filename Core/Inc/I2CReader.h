@@ -16,13 +16,12 @@ class I2CReader {
 public:
 	virtual ~I2CReader();
 	static I2CReader* getInstance();
-	void init(I2C_HandleTypeDef *i2c);
-	float getData(SensorReader* sensorReader);
+	void init(I2C_HandleTypeDef *i2c, SensorReader* sensorReader);
+	float getData(I2C_HandleTypeDef *i2c, SensorReader* sensorReader);
 protected:
 	I2CReader();
 private:
 	static I2CReader * _instance;
-	I2C_HandleTypeDef *hi2c1;
 	osSemaphoreId i2cSemaphoreHandle;
 };
 
