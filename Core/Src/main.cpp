@@ -481,9 +481,19 @@ void StartDefaultTask(void const * argument)
 
 
 void startSdTask(void const * argument) {
-
+	fresult = f_mount(&fs, "/", 1);
 	while(1) {
+		fresult = f_open(&fil, "file2.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
 
+		fresult = f_lseek(&fil, f_size(&fil));
+
+		if (fresult == FR_OK) {
+			//			send_uart ("About to update the file2.txt\n");
+			f_puts("This is updated data and it should be in the end", &fil);
+		}
+
+
+		f_close (&fil);
 	}
 }
 
