@@ -14,8 +14,8 @@ class SensorReader {
 public:
 	SensorReader();
 	virtual ~SensorReader();
-	virtual void init(I2C_HandleTypeDef *i2c);
-	virtual float read(I2C_HandleTypeDef *i2c);
+	virtual void init(I2C_HandleTypeDef *i2c) = 0;
+	virtual float read(I2C_HandleTypeDef *i2c) = 0;
 };
 
 #endif /* INC_SENSORREADER_H_ */

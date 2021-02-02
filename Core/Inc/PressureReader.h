@@ -14,10 +14,10 @@
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
 
-#define I2C_ADD 0xEE
+#define PRES_ADD 0xEE
 #define atmPress 101325 //Pa
 
-class PressureReader: SensorReader {
+class PressureReader: public SensorReader {
 public:
 	PressureReader();
 	virtual ~PressureReader();

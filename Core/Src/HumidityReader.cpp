@@ -30,11 +30,11 @@ float HumidityReader::read(I2C_HandleTypeDef *i2c) {
 	//	if(command == TRIGGER_RH_MEASUREMENT_HM || command == TRIGGER_RH_MEASUREMENT_NHM) d = 30;
 	//	if(command == TRIGGER_T_MEASUREMENT_HM || command == TRIGGER_T_MEASUREMENT_NHM) d = 85;
 	uint8_t data = TRIGGER_RH_MEASUREMENT_NHM;
-	HAL_I2C_Mem_Write(i2c, I2C_ADD, USER_REGISTER_W, 1, &data, 1, 1000);
+	HAL_I2C_Mem_Write(i2c, HUM_ADD, USER_REGISTER_W, 1, &data, 1, 1000);
 
 	osDelay(d);
 
-	HAL_I2C_Mem_Read(i2c, I2C_ADD, USER_REGISTER_R, 1, res, 3, 1000);
+	HAL_I2C_Mem_Read(i2c, HUM_ADD, USER_REGISTER_R, 1, res, 3, 1000);
 
 	result = (res[0] << 8);
 	result += res[1];

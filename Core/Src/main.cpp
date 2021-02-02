@@ -27,6 +27,9 @@
 
 #include "fatfs_sd.h"
 #include <TimeRTC.h>
+#include <I2CReader.h>
+#include <SensorReaderFactory.h>
+#include <WeatherData.h>
 
 /* USER CODE END Includes */
 
@@ -57,6 +60,9 @@ RTC_HandleTypeDef hrtc;
 
 osThreadId defaultTaskHandle;
 osThreadId sdTaskHandle;
+osThreadId temperatureTaskHandle;
+osThreadId humidityTaskHandle;
+osThreadId pressureTaskHandle;
 /* USER CODE BEGIN PV */
 
 FATFS fs;  // file system
@@ -69,6 +75,8 @@ UINT br, bw;  // File read/write count
 FATFS *pfs;
 DWORD fre_clust;
 uint32_t total, free_space;
+
+SensorReaderFactory *sensorFactory;
 
 /* USER CODE END PV */
 
@@ -83,6 +91,9 @@ static void MX_RTC_Init(void);
 
 void StartDefaultTask(void const * argument);
 void startSdTask(void const * argument);
+void startTemperatureTask(void const * argument);
+void startHumidityTask(void const * argument);
+void startPressureTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -129,6 +140,9 @@ int main(void)
 	MX_RTC_Init();
 	/* USER CODE BEGIN 2 */
 
+
+	sensorFactory = new SensorReaderFactory();
+
 	/* USER CODE END 2 */
 
 	/* USER CODE BEGIN RTOS_MUTEX */
@@ -149,11 +163,21 @@ int main(void)
 
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
-	osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+	osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128);
 	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-	osThreadDef(sdTask, startSdTask, osPriorityNormal, 0, 256);
+	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 256);
 	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
+
+
+	osThreadDef(temperatureTask, startTemperatureTask, osPriorityNormal, 0, 256);
+	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
+
+	osThreadDef(humidtyTask, startHumidityTask, osPriorityNormal, 0, 256);
+	humidityTaskHandle = osThreadCreate(osThread(humidtyTask), NULL);
+
+	osThreadDef(pressureTask, startPressureTask, osPriorityNormal, 0, 256);
+	pressureTaskHandle = osThreadCreate(osThread(pressureTask), NULL);
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -479,6 +503,48 @@ void StartDefaultTask(void const * argument)
 	/* USER CODE END 5 */
 }
 
+
+void startTemperatureTask(void const * argument) {
+	/* USER CODE BEGIN 5 */
+	TemperatureReader *reader = sensorFactory->createTemperatureReader();
+
+	I2CReader::getInstance()->init(&hi2c1, reader);
+	/* Infinite loop */
+	while(1) {
+		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
+		WeatherData::getInstance()->updateTemperature(value);
+		osDelay(1000);
+	}
+	/* USER CODE END 5 */
+}
+
+void startHumidityTask(void const * argument) {
+	/* USER CODE BEGIN 5 */
+	HumidityReader *reader = sensorFactory->createHumidityReader();
+
+	I2CReader::getInstance()->init(&hi2c1, reader);
+	/* Infinite loop */
+	while(1) {
+		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
+		WeatherData::getInstance()->updateHumidity(value);
+		osDelay(1000);
+	}
+	/* USER CODE END 5 */
+}
+
+void startPressureTask(void const * argument) {
+	/* USER CODE BEGIN 5 */
+	PressureReader *reader = sensorFactory->createPressureReader();
+
+	I2CReader::getInstance()->init(&hi2c1, reader);
+	/* Infinite loop */
+	while(1) {
+		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
+		WeatherData::getInstance()->updatePressure(value);
+		osDelay(1000);
+	}
+	/* USER CODE END 5 */
+}
 
 void startSdTask(void const * argument) {
 	fresult = f_mount(&fs, "/", 1);

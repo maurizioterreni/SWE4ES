@@ -49,7 +49,7 @@ float PressureReader::read(I2C_HandleTypeDef* i2c) {
 void PressureReader::readCalliberationData(I2C_HandleTypeDef *i2c) {
 	uint8_t Callib_Data[22] = {0};
 	uint16_t Callib_Start = 0xAA;
-	HAL_I2C_Mem_Read(i2c, I2C_ADD, Callib_Start, 1, Callib_Data,22, HAL_MAX_DELAY);
+	HAL_I2C_Mem_Read(i2c, PRES_ADD, Callib_Start, 1, Callib_Data,22, HAL_MAX_DELAY);
 
 	AC1 = ((Callib_Data[0] << 8) | Callib_Data[1]);
 	AC2 = ((Callib_Data[2] << 8) | Callib_Data[3]);
@@ -67,7 +67,7 @@ void PressureReader::readCalliberationData(I2C_HandleTypeDef *i2c) {
 uint32_t PressureReader::getUPress(I2C_HandleTypeDef *i2c, int oss) {  // oversampling setting 0,1,2,3
 	uint8_t datatowrite = 0x34+(oss<<6);
 	uint8_t Press_RAW[3] = {0};
-	HAL_I2C_Mem_Write(i2c, I2C_ADD, 0xF4, 1, &datatowrite, 1, 1000);
+	HAL_I2C_Mem_Write(i2c, PRES_ADD, 0xF4, 1, &datatowrite, 1, 1000);
 	uint32_t d = 0;
 	if(oss == 0) {
 		d = 5;
@@ -79,6 +79,6 @@ uint32_t PressureReader::getUPress(I2C_HandleTypeDef *i2c, int oss) {  // oversa
 		d = 26;
 	}
 	HAL_Delay(d);
-	HAL_I2C_Mem_Read(i2c, I2C_ADD, 0xF6, 1, Press_RAW, 3, 1000);
+	HAL_I2C_Mem_Read(i2c, PRES_ADD, 0xF6, 1, Press_RAW, 3, 1000);
 	return (((Press_RAW[0]<<16)+(Press_RAW[1]<<8)+Press_RAW[2]) >> (8-oss));
 }
