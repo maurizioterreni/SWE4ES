@@ -22,7 +22,7 @@ void HumidityReader::init(I2C_HandleTypeDef *i2c) {
 
 float HumidityReader::read(I2C_HandleTypeDef *i2c) {
 
-//	uint8_t checksum;
+	//	uint8_t checksum;
 	uint8_t res[3];
 	uint16_t result;
 	uint32_t d = 30;
@@ -30,11 +30,11 @@ float HumidityReader::read(I2C_HandleTypeDef *i2c) {
 	//	if(command == TRIGGER_RH_MEASUREMENT_HM || command == TRIGGER_RH_MEASUREMENT_NHM) d = 30;
 	//	if(command == TRIGGER_T_MEASUREMENT_HM || command == TRIGGER_T_MEASUREMENT_NHM) d = 85;
 	uint8_t data = TRIGGER_RH_MEASUREMENT_NHM;
-	HAL_I2C_Mem_Write(i2c, HUM_ADD, USER_REGISTER_W, 1, &data, 1, 1000);
+	HAL_I2C_Mem_Write(i2c, HUM_ADD, USER_REGISTER_W, 1, &data, 1, HAL_MAX_DELAY);
 
 	osDelay(d);
 
-	HAL_I2C_Mem_Read(i2c, HUM_ADD, USER_REGISTER_R, 1, res, 3, 1000);
+	HAL_I2C_Mem_Read(i2c, HUM_ADD, USER_REGISTER_R, 1, res, 3, HAL_MAX_DELAY);
 
 	result = (res[0] << 8);
 	result += res[1];
@@ -48,6 +48,8 @@ float HumidityReader::read(I2C_HandleTypeDef *i2c) {
 
 	//	else return result;
 
+	result = result & 0xFFFC;
+
 	return calcH(result);
 
 }
@@ -57,9 +59,8 @@ float HumidityReader::read(I2C_HandleTypeDef *i2c) {
 
 float HumidityReader::calcH(uint16_t rh) {
 
-	rh &= ~0x0003;	// clean last two bits
-
-	return (-6.0 + 125.0/65536 * (float)rh); // return relative humidity
+	float tempRH = rh * (125.0 / 65536.0); //2^16 = 65536
+	return tempRH - 6.0; //From page 14
 }
 
 uint8_t HumidityReader::crcChecksum(uint8_t data[], uint8_t no_of_bytes, uint8_t checksum) {

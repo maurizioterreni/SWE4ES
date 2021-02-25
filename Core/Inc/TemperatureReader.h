@@ -13,16 +13,6 @@
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
 
-#define I2C_ADD 0x40	// I2C device address
-
-#define TRIGGER_T_MEASUREMENT_HM 0XE3   // command trig. temp meas. hold master
-#define TRIGGER_T_MEASUREMENT_NHM 0XF3  // command trig. temp meas. no hold master
-#define USER_REGISTER_W 0XE6		    // command writing user register
-#define USER_REGISTER_R 0XE7            // command reading user register
-#define SOFT_RESET 0XFE                 // command soft reset
-
-const uint16_t POLYNOMIAL = 0x131;  // P(x)=x^8+x^5+x^4+1 = 100110001
-
 
 class TemperatureReader: public SensorReader {
 public:
@@ -31,8 +21,15 @@ public:
 	float read(I2C_HandleTypeDef *i2c);
 	void init(I2C_HandleTypeDef *i2c);
 private:
+	static constexpr uint8_t I2C_ADR        = 0x40;
+	static constexpr uint8_t USR_REG_WRITE  = 0xE6;
+	static constexpr uint8_t USR_REG_READ   = 0xE7;
+	static constexpr uint8_t SOFT_RESET     = 0xFE;
+
+	static constexpr uint8_t TEMP_HOLD      = 0xE3;
+	static constexpr uint8_t TEMP_POLL      = 0xF3;
 	float calcT(uint16_t t);
-	uint8_t crcChecksum(uint8_t data[], uint8_t no_of_bytes, uint8_t checksum);
+	uint8_t crcChecksum(uint16_t message_from_sensor, uint8_t check_value_from_sensor);
 
 };
 

@@ -23,7 +23,6 @@ public:
 	virtual ~PressureReader();
 	float read(I2C_HandleTypeDef *i2c);
 	void init(I2C_HandleTypeDef *i2c);
-	void init();
 private:
 	void readCalliberationData(I2C_HandleTypeDef *i2c);
 	uint32_t getUPress(I2C_HandleTypeDef *i2c, int oss);

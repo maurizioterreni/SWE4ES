@@ -63,6 +63,7 @@ osThreadId sdTaskHandle;
 osThreadId temperatureTaskHandle;
 osThreadId humidityTaskHandle;
 osThreadId pressureTaskHandle;
+osThreadId updateDataTaskHandle;
 /* USER CODE BEGIN PV */
 
 FATFS fs;  // file system
@@ -94,6 +95,7 @@ void startSdTask(void const * argument);
 void startTemperatureTask(void const * argument);
 void startHumidityTask(void const * argument);
 void startPressureTask(void const * argument);
+void startUpdateDataTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -127,7 +129,6 @@ int main(void)
 	SystemClock_Config();
 
 	/* USER CODE BEGIN SysInit */
-
 	/* USER CODE END SysInit */
 
 	/* Initialize all configured peripherals */
@@ -166,18 +167,23 @@ int main(void)
 	osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128);
 	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 256);
-	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
+	//	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 500);
+	//	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
+	osThreadDef(pressureTask, startPressureTask, osPriorityNormal, 0, 128);
+	pressureTaskHandle = osThreadCreate(osThread(pressureTask), NULL);
 
 
-	osThreadDef(temperatureTask, startTemperatureTask, osPriorityNormal, 0, 256);
-	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
-
-	osThreadDef(humidtyTask, startHumidityTask, osPriorityNormal, 0, 256);
+	osThreadDef(humidtyTask, startHumidityTask, osPriorityNormal, 0, 128);
 	humidityTaskHandle = osThreadCreate(osThread(humidtyTask), NULL);
 
-	osThreadDef(pressureTask, startPressureTask, osPriorityNormal, 0, 256);
-	pressureTaskHandle = osThreadCreate(osThread(pressureTask), NULL);
+	osThreadDef(temperatureTask, startTemperatureTask, osPriorityNormal, 0, 128);
+	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
+//
+//
+//	osThreadDef(updateTask, startUpdateDataTask, osPriorityNormal, 0, 128);
+//	updateDataTaskHandle = osThreadCreate(osThread(updateTask), NULL);
+
+
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -211,11 +217,10 @@ void SystemClock_Config(void)
 	/** Initializes the RCC Oscillators according to the specified parameters
 	 * in the RCC_OscInitTypeDef structure.
 	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
 	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
 	RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
 	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.LSIState = RCC_LSI_ON;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
 	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
 	RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
@@ -237,7 +242,7 @@ void SystemClock_Config(void)
 		Error_Handler();
 	}
 	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_ADC;
-	PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+	PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_HSE_DIV128;
 	PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
 	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
 	{
@@ -504,6 +509,19 @@ void StartDefaultTask(void const * argument)
 }
 
 
+void startUpdateDataTask(void const * argument) {
+	/* USER CODE BEGIN 5 */
+
+	/* Infinite loop */
+	while(1) {
+		if(xTaskNotifyWait(0, 0, NULL, osWaitForever) == pdTRUE) { // we received the notification
+
+		}
+	}
+	/* USER CODE END 5 */
+}
+
+
 void startTemperatureTask(void const * argument) {
 	/* USER CODE BEGIN 5 */
 	TemperatureReader *reader = sensorFactory->createTemperatureReader();
@@ -513,6 +531,7 @@ void startTemperatureTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updateTemperature(value);
+		//		xTaskGenericNotify(updateDataTaskHandle, 0x0, eNoAction, NULL);
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
@@ -527,6 +546,7 @@ void startHumidityTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updateHumidity(value);
+		//		xTaskGenericNotify(updateDataTaskHandle, 0x0, eNoAction, NULL);
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
@@ -541,6 +561,7 @@ void startPressureTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updatePressure(value);
+		//		xTaskGenericNotify(updateDataTaskHandle, 0x0, eNoAction, NULL);
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
