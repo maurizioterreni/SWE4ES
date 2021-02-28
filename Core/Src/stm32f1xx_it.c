@@ -157,6 +157,16 @@ void DebugMon_Handler(void)
   /* USER CODE END DebugMonitor_IRQn 1 */
 }
 
+void SDTimer_Handler(void)
+{
+  if(Timer1 > 0)
+    Timer1--;
+
+  if(Timer2 > 0)
+    Timer2--;
+}
+
+
 /**
   * @brief This function handles System tick timer.
   */

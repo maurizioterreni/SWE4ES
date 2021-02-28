@@ -113,6 +113,7 @@ void startUpdateDataTask(void const * argument);
 int main(void)
 {
 	/* USER CODE BEGIN 1 */
+	DWT->CTRL |= (1<<0);
 
 	/* USER CODE END 1 */
 
@@ -126,7 +127,8 @@ int main(void)
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
-	SystemClock_Config();
+//	SystemClock_Config();
+//	SEGGER_SYSVIEW_Start();
 
 	/* USER CODE BEGIN SysInit */
 	/* USER CODE END SysInit */
@@ -138,8 +140,12 @@ int main(void)
 	MX_SPI1_Init();
 	MX_USART1_UART_Init();
 	MX_FATFS_Init();
-	MX_RTC_Init();
+//	MX_RTC_Init();
 	/* USER CODE BEGIN 2 */
+
+	SEGGER_SYSVIEW_Conf();
+	// vSetVarulMaxPRIGROUPValue();
+
 
 
 	sensorFactory = new SensorReaderFactory();
@@ -169,19 +175,19 @@ int main(void)
 
 	//	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 500);
 	//	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
-	osThreadDef(pressureTask, startPressureTask, osPriorityNormal, 0, 128);
+	osThreadDef(pressureTask, startPressureTask, osPriorityBelowNormal, 0, 128);
 	pressureTaskHandle = osThreadCreate(osThread(pressureTask), NULL);
 
 
 	osThreadDef(humidtyTask, startHumidityTask, osPriorityNormal, 0, 128);
 	humidityTaskHandle = osThreadCreate(osThread(humidtyTask), NULL);
 
-	osThreadDef(temperatureTask, startTemperatureTask, osPriorityNormal, 0, 128);
+	osThreadDef(temperatureTask, startTemperatureTask, osPriorityAboveNormal, 0, 128);
 	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
-//
-//
-//	osThreadDef(updateTask, startUpdateDataTask, osPriorityNormal, 0, 128);
-//	updateDataTaskHandle = osThreadCreate(osThread(updateTask), NULL);
+	//
+	//
+	//	osThreadDef(updateTask, startUpdateDataTask, osPriorityNormal, 0, 128);
+	//	updateDataTaskHandle = osThreadCreate(osThread(updateTask), NULL);
 
 
 
@@ -311,7 +317,7 @@ static void MX_I2C1_Init(void)
 
 	/* USER CODE END I2C1_Init 1 */
 	hi2c1.Instance = I2C1;
-	hi2c1.Init.ClockSpeed = 100000;
+	hi2c1.Init.ClockSpeed = 400000;
 	hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
 	hi2c1.Init.OwnAddress1 = 0;
 	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
