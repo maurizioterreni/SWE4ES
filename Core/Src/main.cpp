@@ -115,6 +115,11 @@ int main(void)
 	/* USER CODE BEGIN 1 */
 	DWT->CTRL |= (1<<0);
 
+	SEGGER_SYSVIEW_Conf();
+	// vSetVarulMaxPRIGROUPValue();
+	SEGGER_SYSVIEW_Start();
+
+
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -127,8 +132,6 @@ int main(void)
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
-//	SystemClock_Config();
-//	SEGGER_SYSVIEW_Start();
 
 	/* USER CODE BEGIN SysInit */
 	/* USER CODE END SysInit */
@@ -140,11 +143,9 @@ int main(void)
 	MX_SPI1_Init();
 	MX_USART1_UART_Init();
 	MX_FATFS_Init();
-//	MX_RTC_Init();
+	//	MX_RTC_Init();
 	/* USER CODE BEGIN 2 */
 
-	SEGGER_SYSVIEW_Conf();
-	// vSetVarulMaxPRIGROUPValue();
 
 
 
@@ -170,8 +171,8 @@ int main(void)
 
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
-	osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128);
-	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
+//	osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128);
+//	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
 	//	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 500);
 	//	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
@@ -188,8 +189,6 @@ int main(void)
 	//
 	//	osThreadDef(updateTask, startUpdateDataTask, osPriorityNormal, 0, 128);
 	//	updateDataTaskHandle = osThreadCreate(osThread(updateTask), NULL);
-
-
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
