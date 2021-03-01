@@ -58,12 +58,10 @@ UART_HandleTypeDef huart1;
 
 RTC_HandleTypeDef hrtc;
 
-osThreadId defaultTaskHandle;
 osThreadId sdTaskHandle;
 osThreadId temperatureTaskHandle;
 osThreadId humidityTaskHandle;
 osThreadId pressureTaskHandle;
-osThreadId updateDataTaskHandle;
 /* USER CODE BEGIN PV */
 
 FATFS fs;  // file system
@@ -90,12 +88,10 @@ static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_RTC_Init(void);
 
-void StartDefaultTask(void const * argument);
 void startSdTask(void const * argument);
 void startTemperatureTask(void const * argument);
 void startHumidityTask(void const * argument);
 void startPressureTask(void const * argument);
-void startUpdateDataTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -171,8 +167,6 @@ int main(void)
 
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
-//	osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128);
-//	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
 	//	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 500);
 	//	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
@@ -187,8 +181,6 @@ int main(void)
 	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
 	//
 	//
-	//	osThreadDef(updateTask, startUpdateDataTask, osPriorityNormal, 0, 128);
-	//	updateDataTaskHandle = osThreadCreate(osThread(updateTask), NULL);
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -495,38 +487,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
- * @brief  Function implementing the defaultTask thread.
- * @param  argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
-{
-	/* USER CODE BEGIN 5 */
-	/* Infinite loop */
-	for(;;)
-	{
-		osDelay(1);
-	}
-	/* USER CODE END 5 */
-}
-
-
-void startUpdateDataTask(void const * argument) {
-	/* USER CODE BEGIN 5 */
-
-	/* Infinite loop */
-	while(1) {
-		if(xTaskNotifyWait(0, 0, NULL, osWaitForever) == pdTRUE) { // we received the notification
-
-		}
-	}
-	/* USER CODE END 5 */
-}
-
-
 void startTemperatureTask(void const * argument) {
 	/* USER CODE BEGIN 5 */
 	TemperatureReader *reader = sensorFactory->createTemperatureReader();
@@ -536,7 +496,6 @@ void startTemperatureTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updateTemperature(value);
-		//		xTaskGenericNotify(updateDataTaskHandle, 0x0, eNoAction, NULL);
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
@@ -551,7 +510,6 @@ void startHumidityTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updateHumidity(value);
-		//		xTaskGenericNotify(updateDataTaskHandle, 0x0, eNoAction, NULL);
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
@@ -566,7 +524,6 @@ void startPressureTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updatePressure(value);
-		//		xTaskGenericNotify(updateDataTaskHandle, 0x0, eNoAction, NULL);
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
