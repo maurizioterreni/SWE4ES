@@ -58,8 +58,8 @@ UART_HandleTypeDef huart1;
 
 RTC_HandleTypeDef hrtc;
 
-osThreadId defaultTaskHandle;
 osThreadId sdTaskHandle;
+osThreadId httpTaskHandle;
 osThreadId temperatureTaskHandle;
 osThreadId humidityTaskHandle;
 osThreadId pressureTaskHandle;
@@ -87,13 +87,14 @@ static void MX_ADC1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
-static void MX_RTC_Init(void);
 
-void StartDefaultTask(void const * argument);
 void startSdTask(void const * argument);
+void startHttpTask(void const * argument);
 void startTemperatureTask(void const * argument);
 void startHumidityTask(void const * argument);
 void startPressureTask(void const * argument);
+
+int getDataString(char *buf, int size);
 
 /* USER CODE BEGIN PFP */
 
@@ -111,6 +112,12 @@ void startPressureTask(void const * argument);
 int main(void)
 {
 	/* USER CODE BEGIN 1 */
+	DWT->CTRL |= (1<<0);
+
+//	SEGGER_SYSVIEW_Conf();
+	// vSetVarulMaxPRIGROUPValue();
+//	SEGGER_SYSVIEW_Start();
+
 
 	/* USER CODE END 1 */
 
@@ -124,10 +131,8 @@ int main(void)
 	/* USER CODE END Init */
 
 	/* Configure the system clock */
-	SystemClock_Config();
 
 	/* USER CODE BEGIN SysInit */
-
 	/* USER CODE END SysInit */
 
 	/* Initialize all configured peripherals */
@@ -137,8 +142,10 @@ int main(void)
 	MX_SPI1_Init();
 	MX_USART1_UART_Init();
 	MX_FATFS_Init();
-	MX_RTC_Init();
+	//	MX_RTC_Init();
 	/* USER CODE BEGIN 2 */
+
+
 
 
 	sensorFactory = new SensorReaderFactory();
@@ -163,21 +170,25 @@ int main(void)
 
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
-	osThreadDef(defaultTask, StartDefaultTask, osPriorityIdle, 0, 128);
-	defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 256);
+	osThreadDef(pressureTask, startPressureTask, osPriorityLow, 0, 128);
+	pressureTaskHandle = osThreadCreate(osThread(pressureTask), NULL);
+
+
+	osThreadDef(humidtyTask, startHumidityTask, osPriorityBelowNormal, 0, 128);
+	humidityTaskHandle = osThreadCreate(osThread(humidtyTask), NULL);
+
+	osThreadDef(temperatureTask, startTemperatureTask, osPriorityNormal, 0, 128);
+	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
+
+	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 128);
 	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
 
 
-	osThreadDef(temperatureTask, startTemperatureTask, osPriorityNormal, 0, 256);
-	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
-
-	osThreadDef(humidtyTask, startHumidityTask, osPriorityNormal, 0, 256);
-	humidityTaskHandle = osThreadCreate(osThread(humidtyTask), NULL);
-
-	osThreadDef(pressureTask, startPressureTask, osPriorityNormal, 0, 256);
-	pressureTaskHandle = osThreadCreate(osThread(pressureTask), NULL);
+	osThreadDef(httpTask, startHttpTask, osPriorityHigh, 0, 128);
+	httpTaskHandle = osThreadCreate(osThread(httpTask), NULL);
+	//
+	//
 
 	/* USER CODE BEGIN RTOS_THREADS */
 	/* add threads, ... */
@@ -211,11 +222,10 @@ void SystemClock_Config(void)
 	/** Initializes the RCC Oscillators according to the specified parameters
 	 * in the RCC_OscInitTypeDef structure.
 	 */
-	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_HSE;
+	RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
 	RCC_OscInitStruct.HSEState = RCC_HSE_ON;
 	RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
 	RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-	RCC_OscInitStruct.LSIState = RCC_LSI_ON;
 	RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
 	RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
 	RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
@@ -237,7 +247,7 @@ void SystemClock_Config(void)
 		Error_Handler();
 	}
 	PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_RTC|RCC_PERIPHCLK_ADC;
-	PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_LSI;
+	PeriphClkInit.RTCClockSelection = RCC_RTCCLKSOURCE_HSE_DIV128;
 	PeriphClkInit.AdcClockSelection = RCC_ADCPCLK2_DIV6;
 	if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
 	{
@@ -306,7 +316,7 @@ static void MX_I2C1_Init(void)
 
 	/* USER CODE END I2C1_Init 1 */
 	hi2c1.Instance = I2C1;
-	hi2c1.Init.ClockSpeed = 100000;
+	hi2c1.Init.ClockSpeed = 400000;
 	hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
 	hi2c1.Init.OwnAddress1 = 0;
 	hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -329,45 +339,45 @@ static void MX_I2C1_Init(void)
  * @param None
  * @retval None
  */
-static void MX_RTC_Init(void)
-{
-	/* USER CODE BEGIN RTC_Init 0 */
-	/* USER CODE END RTC_Init 0 */
-	RTC_TimeTypeDef sTime = {0};
-	RTC_DateTypeDef DateToUpdate = {0};
-	/* USER CODE BEGIN RTC_Init 1 */
-	/* USER CODE END RTC_Init 1 */
-	/** Initialize RTC Only
-	 */
-	hrtc.Instance = RTC;
-	hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
-	hrtc.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
-	if (HAL_RTC_Init(&hrtc) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/* USER CODE BEGIN Check_RTC_BKUP */
-	/* USER CODE END Check_RTC_BKUP */
-	/** Initialize RTC and set the Time and Date
-	 */
-	sTime.Hours = 0x10;
-	sTime.Minutes = 0x20;
-	sTime.Seconds = 0x0;
-	if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	DateToUpdate.WeekDay = RTC_WEEKDAY_SATURDAY;
-	DateToUpdate.Month = RTC_MONTH_JANUARY;
-	DateToUpdate.Date = 0x1;
-	DateToUpdate.Year = 0x21;
-	if (HAL_RTC_SetDate(&hrtc, &DateToUpdate, RTC_FORMAT_BCD) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/* USER CODE BEGIN RTC_Init 2 */
-	/* USER CODE END RTC_Init 2 */
-}
+//static void MX_RTC_Init(void)
+//{
+//	/* USER CODE BEGIN RTC_Init 0 */
+//	/* USER CODE END RTC_Init 0 */
+//	RTC_TimeTypeDef sTime = {0};
+//	RTC_DateTypeDef DateToUpdate = {0};
+//	/* USER CODE BEGIN RTC_Init 1 */
+//	/* USER CODE END RTC_Init 1 */
+//	/** Initialize RTC Only
+//	 */
+//	hrtc.Instance = RTC;
+//	hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
+//	hrtc.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
+//	if (HAL_RTC_Init(&hrtc) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}
+//	/* USER CODE BEGIN Check_RTC_BKUP */
+//	/* USER CODE END Check_RTC_BKUP */
+//	/** Initialize RTC and set the Time and Date
+//	 */
+//	sTime.Hours = 0x10;
+//	sTime.Minutes = 0x20;
+//	sTime.Seconds = 0x0;
+//	if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}
+//	DateToUpdate.WeekDay = RTC_WEEKDAY_SATURDAY;
+//	DateToUpdate.Month = RTC_MONTH_JANUARY;
+//	DateToUpdate.Date = 0x1;
+//	DateToUpdate.Year = 0x21;
+//	if (HAL_RTC_SetDate(&hrtc, &DateToUpdate, RTC_FORMAT_BCD) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}
+//	/* USER CODE BEGIN RTC_Init 2 */
+//	/* USER CODE END RTC_Init 2 */
+//}
 
 
 /**
@@ -485,25 +495,6 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
-/* USER CODE BEGIN Header_StartDefaultTask */
-/**
- * @brief  Function implementing the defaultTask thread.
- * @param  argument: Not used
- * @retval None
- */
-/* USER CODE END Header_StartDefaultTask */
-void StartDefaultTask(void const * argument)
-{
-	/* USER CODE BEGIN 5 */
-	/* Infinite loop */
-	for(;;)
-	{
-		osDelay(1);
-	}
-	/* USER CODE END 5 */
-}
-
-
 void startTemperatureTask(void const * argument) {
 	/* USER CODE BEGIN 5 */
 	TemperatureReader *reader = sensorFactory->createTemperatureReader();
@@ -513,6 +504,7 @@ void startTemperatureTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updateTemperature(value);
+		WeatherData::getInstance()->calculateData();
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
@@ -527,6 +519,7 @@ void startHumidityTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updateHumidity(value);
+		WeatherData::getInstance()->calculateData();
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
@@ -541,25 +534,38 @@ void startPressureTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updatePressure(value);
+		WeatherData::getInstance()->calculateData();
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
 }
 
 void startSdTask(void const * argument) {
+	char buf[200];
 	fresult = f_mount(&fs, "/", 1);
 	while(1) {
-		fresult = f_open(&fil, "file2.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
+		fresult = f_open(&fil, "wth.csv", FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
 
 		fresult = f_lseek(&fil, f_size(&fil));
 
 		if (fresult == FR_OK) {
-			//			send_uart ("About to update the file2.txt\n");
-			f_puts("This is updated data and it should be in the end", &fil);
+			WeatherData::getInstance()->getDataString(buf, sizeof(buf));
+			f_puts(buf, &fil);
 		}
 
 
 		f_close (&fil);
+
+		osDelay(60000);
+	}
+}
+
+void startHttpTask(void const * argument) {
+	char buf[200];
+	while(1) {
+		int len = WeatherData::getInstance()->getDataString(buf, sizeof(buf));
+		HAL_UART_Transmit(&huart1, (uint8_t *) buf, len, 100);
+		osDelay(60000);
 	}
 }
 
@@ -576,6 +582,11 @@ void Error_Handler(void)
 	{
 	}
 	/* USER CODE END Error_Handler_Debug */
+}
+
+
+int getDataString(char *buf, int size) {
+	return snprintf(buf, size, "10.0,1000,50");
 }
 
 #ifdef  USE_FULL_ASSERT

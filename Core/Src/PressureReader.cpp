@@ -35,10 +35,10 @@ float PressureReader::read(I2C_HandleTypeDef* i2c) {
 	B4 = AC4*(unsigned long)(X3+32768)/(pow(2,15));
 	B7 = ((unsigned long)UP-B3)*(50000>>oss);
 	if (B7<0x80000000) {
-		press = (B7*2)/B4;
+		press = B4 != 0 ? (B7*2)/B4 : 0;
 	}
 	else {
-		press = (B7/B4)*2;
+		press = B4 != 0 ? (B7/B4)*2 : 0;
 	}
 	X1 = (press/(pow(2,8)))*(press/(pow(2,8)));
 	X1 = (X1*3038)/(pow(2,16));
