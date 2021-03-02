@@ -112,9 +112,9 @@ int main(void)
 	/* USER CODE BEGIN 1 */
 	DWT->CTRL |= (1<<0);
 
-//	SEGGER_SYSVIEW_Conf();
-	// vSetVarulMaxPRIGROUPValue();
-//	SEGGER_SYSVIEW_Start();
+	SEGGER_SYSVIEW_Conf();
+//	 vSetVarulMaxPRIGROUPValue();
+	SEGGER_SYSVIEW_Start();
 
 
 	/* USER CODE END 1 */
@@ -168,14 +168,14 @@ int main(void)
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
 
-	osThreadDef(pressureTask, startPressureTask, osPriorityLow, 0, 128);
+	osThreadDef(presTask, startPressureTask, osPriorityLow, 0, 128);
 	pressureTaskHandle = osThreadCreate(osThread(pressureTask), NULL);
 
 
-	osThreadDef(humidtyTask, startHumidityTask, osPriorityBelowNormal, 0, 128);
+	osThreadDef(humTask, startHumidityTask, osPriorityBelowNormal, 0, 128);
 	humidityTaskHandle = osThreadCreate(osThread(humidtyTask), NULL);
 
-	osThreadDef(temperatureTask, startTemperatureTask, osPriorityNormal, 0, 128);
+	osThreadDef(tempTask, startTemperatureTask, osPriorityNormal, 0, 128);
 	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
 
 	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 128);
