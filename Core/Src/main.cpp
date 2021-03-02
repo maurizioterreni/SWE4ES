@@ -59,6 +59,7 @@ UART_HandleTypeDef huart1;
 RTC_HandleTypeDef hrtc;
 
 osThreadId sdTaskHandle;
+osThreadId httpTaskHandle;
 osThreadId temperatureTaskHandle;
 osThreadId humidityTaskHandle;
 osThreadId pressureTaskHandle;
@@ -86,12 +87,14 @@ static void MX_ADC1_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
-static void MX_RTC_Init(void);
 
 void startSdTask(void const * argument);
+void startHttpTask(void const * argument);
 void startTemperatureTask(void const * argument);
 void startHumidityTask(void const * argument);
 void startPressureTask(void const * argument);
+
+int getDataString(char *buf, int size);
 
 /* USER CODE BEGIN PFP */
 
@@ -111,9 +114,9 @@ int main(void)
 	/* USER CODE BEGIN 1 */
 	DWT->CTRL |= (1<<0);
 
-	SEGGER_SYSVIEW_Conf();
+//	SEGGER_SYSVIEW_Conf();
 	// vSetVarulMaxPRIGROUPValue();
-	SEGGER_SYSVIEW_Start();
+//	SEGGER_SYSVIEW_Start();
 
 
 	/* USER CODE END 1 */
@@ -168,17 +171,22 @@ int main(void)
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
 
-	//	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 500);
-	//	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
-	osThreadDef(pressureTask, startPressureTask, osPriorityBelowNormal, 0, 128);
+	osThreadDef(pressureTask, startPressureTask, osPriorityLow, 0, 128);
 	pressureTaskHandle = osThreadCreate(osThread(pressureTask), NULL);
 
 
-	osThreadDef(humidtyTask, startHumidityTask, osPriorityNormal, 0, 128);
+	osThreadDef(humidtyTask, startHumidityTask, osPriorityBelowNormal, 0, 128);
 	humidityTaskHandle = osThreadCreate(osThread(humidtyTask), NULL);
 
-	osThreadDef(temperatureTask, startTemperatureTask, osPriorityAboveNormal, 0, 128);
+	osThreadDef(temperatureTask, startTemperatureTask, osPriorityNormal, 0, 128);
 	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
+
+	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 128);
+	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
+
+
+	osThreadDef(httpTask, startHttpTask, osPriorityHigh, 0, 128);
+	httpTaskHandle = osThreadCreate(osThread(httpTask), NULL);
 	//
 	//
 
@@ -331,45 +339,45 @@ static void MX_I2C1_Init(void)
  * @param None
  * @retval None
  */
-static void MX_RTC_Init(void)
-{
-	/* USER CODE BEGIN RTC_Init 0 */
-	/* USER CODE END RTC_Init 0 */
-	RTC_TimeTypeDef sTime = {0};
-	RTC_DateTypeDef DateToUpdate = {0};
-	/* USER CODE BEGIN RTC_Init 1 */
-	/* USER CODE END RTC_Init 1 */
-	/** Initialize RTC Only
-	 */
-	hrtc.Instance = RTC;
-	hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
-	hrtc.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
-	if (HAL_RTC_Init(&hrtc) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/* USER CODE BEGIN Check_RTC_BKUP */
-	/* USER CODE END Check_RTC_BKUP */
-	/** Initialize RTC and set the Time and Date
-	 */
-	sTime.Hours = 0x10;
-	sTime.Minutes = 0x20;
-	sTime.Seconds = 0x0;
-	if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	DateToUpdate.WeekDay = RTC_WEEKDAY_SATURDAY;
-	DateToUpdate.Month = RTC_MONTH_JANUARY;
-	DateToUpdate.Date = 0x1;
-	DateToUpdate.Year = 0x21;
-	if (HAL_RTC_SetDate(&hrtc, &DateToUpdate, RTC_FORMAT_BCD) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	/* USER CODE BEGIN RTC_Init 2 */
-	/* USER CODE END RTC_Init 2 */
-}
+//static void MX_RTC_Init(void)
+//{
+//	/* USER CODE BEGIN RTC_Init 0 */
+//	/* USER CODE END RTC_Init 0 */
+//	RTC_TimeTypeDef sTime = {0};
+//	RTC_DateTypeDef DateToUpdate = {0};
+//	/* USER CODE BEGIN RTC_Init 1 */
+//	/* USER CODE END RTC_Init 1 */
+//	/** Initialize RTC Only
+//	 */
+//	hrtc.Instance = RTC;
+//	hrtc.Init.AsynchPrediv = RTC_AUTO_1_SECOND;
+//	hrtc.Init.OutPut = RTC_OUTPUTSOURCE_NONE;
+//	if (HAL_RTC_Init(&hrtc) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}
+//	/* USER CODE BEGIN Check_RTC_BKUP */
+//	/* USER CODE END Check_RTC_BKUP */
+//	/** Initialize RTC and set the Time and Date
+//	 */
+//	sTime.Hours = 0x10;
+//	sTime.Minutes = 0x20;
+//	sTime.Seconds = 0x0;
+//	if (HAL_RTC_SetTime(&hrtc, &sTime, RTC_FORMAT_BCD) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}
+//	DateToUpdate.WeekDay = RTC_WEEKDAY_SATURDAY;
+//	DateToUpdate.Month = RTC_MONTH_JANUARY;
+//	DateToUpdate.Date = 0x1;
+//	DateToUpdate.Year = 0x21;
+//	if (HAL_RTC_SetDate(&hrtc, &DateToUpdate, RTC_FORMAT_BCD) != HAL_OK)
+//	{
+//		Error_Handler();
+//	}
+//	/* USER CODE BEGIN RTC_Init 2 */
+//	/* USER CODE END RTC_Init 2 */
+//}
 
 
 /**
@@ -496,6 +504,7 @@ void startTemperatureTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updateTemperature(value);
+		WeatherData::getInstance()->calculateData();
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
@@ -510,6 +519,7 @@ void startHumidityTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updateHumidity(value);
+		WeatherData::getInstance()->calculateData();
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
@@ -524,25 +534,38 @@ void startPressureTask(void const * argument) {
 	while(1) {
 		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
 		WeatherData::getInstance()->updatePressure(value);
+		WeatherData::getInstance()->calculateData();
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
 }
 
 void startSdTask(void const * argument) {
+	char buf[200];
 	fresult = f_mount(&fs, "/", 1);
 	while(1) {
-		fresult = f_open(&fil, "file2.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
+		fresult = f_open(&fil, "wth.csv", FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
 
 		fresult = f_lseek(&fil, f_size(&fil));
 
 		if (fresult == FR_OK) {
-			//			send_uart ("About to update the file2.txt\n");
-			f_puts("This is updated data and it should be in the end", &fil);
+			WeatherData::getInstance()->getDataString(buf, sizeof(buf));
+			f_puts(buf, &fil);
 		}
 
 
 		f_close (&fil);
+
+		osDelay(60000);
+	}
+}
+
+void startHttpTask(void const * argument) {
+	char buf[200];
+	while(1) {
+		int len = WeatherData::getInstance()->getDataString(buf, sizeof(buf));
+		HAL_UART_Transmit(&huart1, (uint8_t *) buf, len, 100);
+		osDelay(60000);
 	}
 }
 
@@ -559,6 +582,11 @@ void Error_Handler(void)
 	{
 	}
 	/* USER CODE END Error_Handler_Debug */
+}
+
+
+int getDataString(char *buf, int size) {
+	return snprintf(buf, size, "10.0,1000,50");
 }
 
 #ifdef  USE_FULL_ASSERT

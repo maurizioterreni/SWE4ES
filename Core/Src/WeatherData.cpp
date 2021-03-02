@@ -49,6 +49,8 @@ void WeatherData::updatePressure(float value) {
 }
 
 void WeatherData::calculateData() {
+	dewpoint = calcDewpoint(temperature, humidity);
+	wetbulb = calcWetbulb(temperature, pressure, humidity);
 }
 
 
@@ -59,4 +61,30 @@ void WeatherData::semaphoreWait() {
 
 void WeatherData::semaphoreRelease() {
 	osSemaphoreRelease(wthSemaphoreHandle);
+}
+
+
+float WeatherData::invertedRH(float temp, float rh) {
+	return temp * (rh/100);
+}
+
+
+float WeatherData::calcWetbulb(float temp, float press, float hum) {
+	float res = 0.025100616f;
+	return invertedRH(temp, hum) - res - press * temp * 0.00066f;
+}
+
+
+float WeatherData::calcDewpoint(float temp, float hum) {
+	return (temp - (14.55 + 0.114 * temp) * (1 - (0.01 * hum)) - pow(((2.5 + 0.007 * temp) * (1 - (0.01 * hum))),3) - (15.9 + 0.117 * temp) * pow((1 - (0.01 * hum)), 14));
+}
+
+
+int WeatherData::getDataString(char *buf, int size) {
+	return snprintf(buf, size, "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f\n",
+			temperature,
+			humidity,
+			pressure,
+			wetbulb,
+			dewpoint);
 }
