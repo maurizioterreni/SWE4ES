@@ -81,10 +81,13 @@ float WeatherData::calcDewpoint(float temp, float hum) {
 
 
 int WeatherData::getDataString(char *buf, int size) {
-	return snprintf(buf, size, "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f\n",
+	semaphoreWait();
+	int len = snprintf(buf, size, "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f\n",
 			temperature,
 			humidity,
 			pressure,
 			wetbulb,
 			dewpoint);
+	semaphoreRelease();
+	return len;
 }

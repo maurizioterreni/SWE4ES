@@ -15,16 +15,15 @@
 
 class WeatherData {
 public:
-	virtual ~WeatherData();
 	static WeatherData* getInstance();
 	void updateTemperature(float value);
 	void updateHumidity(float value);
 	void updatePressure(float value);
 	void calculateData();
 	int getDataString(char *buf, int size);
-protected:
-	WeatherData();
 private:
+	WeatherData();
+	virtual ~WeatherData();
 	void semaphoreWait();
 	void semaphoreRelease();
 	float invertedRH(float es, float rh);
