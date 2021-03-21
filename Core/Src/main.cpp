@@ -58,10 +58,18 @@ UART_HandleTypeDef huart1;
 RTC_HandleTypeDef hrtc;
 
 osThreadId sdTaskHandle;
+osThreadId t25TaskHandle;
 osThreadId httpTaskHandle;
+osThreadId t30TaskHandle;
 osThreadId temperatureTaskHandle;
+osThreadId t3TaskHandle;
+osThreadId t6TaskHandle;
 osThreadId humidityTaskHandle;
+osThreadId t11TaskHandle;
+osThreadId t14TaskHandle;
 osThreadId pressureTaskHandle;
+osThreadId t18TaskHandle;
+osThreadId t20TaskHandle;
 /* USER CODE BEGIN PV */
 
 FATFS fs;  // file system
@@ -87,10 +95,20 @@ static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 
 void startSdTask(void const * argument);
+void startT25Task(void const * argument);
 void startHttpTask(void const * argument);
+void startT30Task(void const * argument);
 void startTemperatureTask(void const * argument);
+void startT3Task(void const * argument);
+void startT6Task(void const * argument);
 void startHumidityTask(void const * argument);
+void startT11Task(void const * argument);
+void startT14Task(void const * argument);
 void startPressureTask(void const * argument);
+void startT18Task(void const * argument);
+void startT20Task(void const * argument);
+
+
 
 int getDataString(char *buf, int size);
 
@@ -109,14 +127,6 @@ int getDataString(char *buf, int size);
  */
 int main(void)
 {
-	/* USER CODE BEGIN 1 */
-	DWT->CTRL |= (1<<0);
-
-	SEGGER_SYSVIEW_Conf();
-//	 vSetVarulMaxPRIGROUPValue();
-	SEGGER_SYSVIEW_Start();
-
-
 	/* USER CODE END 1 */
 
 	/* MCU Configuration--------------------------------------------------------*/
@@ -168,22 +178,47 @@ int main(void)
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
 
-	osThreadDef(presTask, startPressureTask, osPriorityLow, 0, 128);
+	osThreadDef(presTask, startPressureTask, osPriorityRealtime 0, 256);
 	pressureTaskHandle = osThreadCreate(osThread(pressureTask), NULL);
 
+	osThreadDef(t18Task, startT18Task, osPriorityAboveNormal, 0, 256);
+	t18TaskHandle = osThreadCreate(osThread(t18Task), NULL);
 
-	osThreadDef(humTask, startHumidityTask, osPriorityBelowNormal, 0, 128);
+	osThreadDef(t20Task, startT20Task, osPriorityNormal, 0, 256);
+	t20TaskHandle = osThreadCreate(osThread(t20Task), NULL);
+
+
+	osThreadDef(humTask, startHumidityTask, osPriorityRealtime, 0, 256);
 	humidityTaskHandle = osThreadCreate(osThread(humidtyTask), NULL);
 
-	osThreadDef(tempTask, startTemperatureTask, osPriorityNormal, 0, 128);
+	osThreadDef(t11Task, startT11Task, osPriorityAboveNormal, 0, 256);
+	t11TaskHandle = osThreadCreate(osThread(t11Task), NULL);
+
+	osThreadDef(t14Task, startT14Task, osPriorityNormal, 0, 256);
+	t14TaskHandle = osThreadCreate(osThread(t14Task), NULL);
+
+	osThreadDef(tempTask, startTemperatureTask, osPriorityRealtime, 0, 256);
 	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
 
-	osThreadDef(sdTask, startSdTask, osPriorityAboveNormal, 0, 128);
+	osThreadDef(t3Task, startT3Task, osPriorityAboveNormal, 0, 256);
+	t3TaskHandle = osThreadCreate(osThread(t3Task), NULL);
+
+	osThreadDef(t6Task, startT6Task, osPriorityNormal, 0, 256);
+	t6TaskHandle = osThreadCreate(osThread(t6Task), NULL);
+
+
+	osThreadDef(sdTask, startSdTask, osPriorityRealtime, 0, 256);
 	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
 
+	osThreadDef(t25Task, startT25Task, osPriorityNormal, 0, 256);
+	t25TaskHandle = osThreadCreate(osThread(t25Task), NULL);
 
-	osThreadDef(httpTask, startHttpTask, osPriorityHigh, 0, 128);
+
+	osThreadDef(httpTask, startHttpTask, osPriorityRealtime, 0, 256);
 	httpTaskHandle = osThreadCreate(osThread(httpTask), NULL);
+
+	osThreadDef(t30Task, startT30Task, osPriorityNormal, 0, 256);
+	t30TaskHandle = osThreadCreate(osThread(t30Task), NULL);
 	//
 	//
 
@@ -406,50 +441,111 @@ static void MX_GPIO_Init(void)
 
 void startTemperatureTask(void const * argument) {
 	/* USER CODE BEGIN 5 */
-	TemperatureReader *reader = sensorFactory->createTemperatureReader();
-
-	I2CReader::getInstance()->init(&hi2c1, reader);
-	/* Infinite loop */
 	while(1) {
-		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
-		WeatherData::getInstance()->updateTemperature(value);
-		WeatherData::getInstance()->calculateData();
+		xTaskNotify(t3TaskHandle, 0x0, eNoAction);
+		xTaskNotify(t6TaskHandle, 0x0, eNoAction);
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
 }
 
+void startT3Task(void const * argument) {
+	TemperatureReader * reader = sensorFactory->createTemperatureReader();
+	I2CReader::getInstance()->init(&hi2c1, reader);
+	while(1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
+			Send_Uart("T0:",0);
+			Send_Uart("T1:",0);
+			Send_Uart("T2:",0);
+			long old = HAL_GetTick();
+			float value = I2CReader::getInstance()->getData(&hi2c1, reader);
+			WeatherData::getInstance()->updateTemperature(value);
+			Send_Uart("T3:",HAL_GetTick() - old);
+		}
+	}
+}
+
+void startT6Task(void const * argument) {
+	while(1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
+			long old = HAL_GetTick();
+			WeatherData::getInstance()->calculateData();
+		}
+	}
+}
+
+
 void startHumidityTask(void const * argument) {
 	/* USER CODE BEGIN 5 */
-	HumidityReader *reader = sensorFactory->createHumidityReader();
-
-	I2CReader::getInstance()->init(&hi2c1, reader);
-	/* Infinite loop */
 	while(1) {
-		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
-		WeatherData::getInstance()->updateHumidity(value);
-		WeatherData::getInstance()->calculateData();
+		xTaskNotify(t14TaskHandle, 0x0, eNoAction);
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
+}
+
+void startT11Task(void const * argument) {
+	HumidityReader *reader = sensorFactory->createHumidityReader();
+	I2CReader::getInstance()->init(&hi2c1, reader);
+	while(1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
+			long old = HAL_GetTick();
+			float value = I2CReader::getInstance()->getData(&hi2c1, reader);
+			WeatherData::getInstance()->updateHumidity(value);
+		}
+	}
+}
+
+void startT14Task(void const * argument) {
+	while(1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
+			long old = HAL_GetTick();
+			WeatherData::getInstance()->calculateData();
+		}
+	}
 }
 
 void startPressureTask(void const * argument) {
 	/* USER CODE BEGIN 5 */
-	PressureReader *reader = sensorFactory->createPressureReader();
-
-	I2CReader::getInstance()->init(&hi2c1, reader);
-	/* Infinite loop */
 	while(1) {
-		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
-		WeatherData::getInstance()->updatePressure(value);
-		WeatherData::getInstance()->calculateData();
+		xTaskNotify(t18TaskHandle, 0x0, eNoAction);
+		xTaskNotify(t20TaskHandle, 0x0, eNoAction);
 		osDelay(1000);
 	}
 	/* USER CODE END 5 */
 }
 
+void startT18Task(void const * argument) {
+	PressureReader *reader = sensorFactory->createPressureReader();
+	I2CReader::getInstance()->init(&hi2c1, reader);
+	while(1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
+			long old = HAL_GetTick();
+			float value = I2CReader::getInstance()->getData(&hi2c1, reader);
+			WeatherData::getInstance()->updatePressure(value);
+		}
+	}
+}
+
+void startT20Task(void const * argument) {
+	while(1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
+			long old = HAL_GetTick();
+			WeatherData::getInstance()->calculateData();
+		}
+	}
+}
+
 void startSdTask(void const * argument) {
+	while(1) {
+		Send_Uart("task04\n");
+		xTaskNotify(t25TaskHandle, 0x0, eNoAction);
+		osDelay(60000);
+	}
+}
+
+
+void startT25Task(void const * argument) {
 	char buf[100];
 	fresult = f_mount(&fs, "/", 1);
 	while(1) {
@@ -464,17 +560,25 @@ void startSdTask(void const * argument) {
 
 
 		f_close (&fil);
-
-		osDelay(60000);
 	}
 }
 
 void startHttpTask(void const * argument) {
-	char buf[100];
 	while(1) {
-		int len = WeatherData::getInstance()->getDataString(buf, sizeof(buf));
-		HAL_UART_Transmit(&huart1, (uint8_t *) buf, len, 100);
+		xTaskNotify(t30TaskHandle, 0x0, eNoAction);
 		osDelay(60000);
+	}
+}
+
+
+void startT30Task(void const * argument) {
+	while(1) {
+		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
+			char buf[100];
+			long old = HAL_GetTick();
+			int len = WeatherData::getInstance()->getDataString(buf, sizeof(buf));
+			HAL_UART_Transmit(&huart3, (uint8_t *) buf, len, 100);
+		}
 	}
 }
 
