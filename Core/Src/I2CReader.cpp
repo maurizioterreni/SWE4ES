@@ -34,9 +34,15 @@ void I2CReader::init(I2C_HandleTypeDef *i2c, SensorReader* sensorReader) {
 
 
 float I2CReader::getData(I2C_HandleTypeDef *i2c, SensorReader* sensorReader) {
-	osSemaphoreWait(i2cSemaphoreHandle, osWaitForever);
 	float value = sensorReader->read(i2c);
-	osSemaphoreRelease(i2cSemaphoreHandle);
 	return value;
+}
+
+void I2CReader::wait() {
+	osSemaphoreWait(i2cSemaphoreHandle, osWaitForever);
+}
+
+void I2CReader::release() {
+	osSemaphoreRelease(i2cSemaphoreHandle);
 }
 

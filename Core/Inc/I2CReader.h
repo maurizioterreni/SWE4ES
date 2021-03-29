@@ -18,6 +18,8 @@ public:
 	static I2CReader* getInstance();
 	void init(I2C_HandleTypeDef *i2c, SensorReader* sensorReader);
 	float getData(I2C_HandleTypeDef *i2c, SensorReader* sensorReader);
+	void wait();
+	void release();
 private:
 	I2CReader();
 	virtual ~I2CReader();

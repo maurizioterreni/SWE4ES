@@ -21,11 +21,11 @@ public:
 	void updatePressure(float value);
 	void calculateData();
 	int getDataString(char *buf, int size);
+	void semaphoreWait();
+	void semaphoreRelease();
 private:
 	WeatherData();
 	virtual ~WeatherData();
-	void semaphoreWait();
-	void semaphoreRelease();
 	float invertedRH(float es, float rh);
 	float calcWetbulb(float temp, float press, float hum);
 	float calcDewpoint(float temp, float hum);

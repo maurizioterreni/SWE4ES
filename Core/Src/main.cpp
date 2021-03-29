@@ -57,19 +57,48 @@ UART_HandleTypeDef huart1;
 
 RTC_HandleTypeDef hrtc;
 
+osThreadId tempTaskHandle;
+osThreadId humTaskHandle;
+osThreadId pressTaskHandle;
 osThreadId sdTaskHandle;
-osThreadId t25TaskHandle;
 osThreadId httpTaskHandle;
-osThreadId t30TaskHandle;
-osThreadId temperatureTaskHandle;
+
+
+//TEMP TASK
+osThreadId t1TaskHandle;
+osThreadId t2TaskHandle;
 osThreadId t3TaskHandle;
+osThreadId t4TaskHandle;
+osThreadId t5TaskHandle;
 osThreadId t6TaskHandle;
-osThreadId humidityTaskHandle;
+
+
+
+
+//HUM TASK
+osThreadId t8TaskHandle;
+osThreadId t9TaskHandle;
+osThreadId t10TaskHandle;
 osThreadId t11TaskHandle;
-osThreadId t14TaskHandle;
-osThreadId pressureTaskHandle;
+osThreadId t12TaskHandle;
+osThreadId t13TaskHandle;
+
+//Press TASK
+osThreadId t15TaskHandle;
+osThreadId t16TaskHandle;
+osThreadId t17TaskHandle;
 osThreadId t18TaskHandle;
+
+
+//SD TASK
 osThreadId t20TaskHandle;
+osThreadId t21TaskHandle;
+osThreadId t22TaskHandle;
+
+
+//HttpTask
+osThreadId t24TaskHandle;
+osThreadId t25TaskHandle;
 /* USER CODE BEGIN PV */
 
 FATFS fs;  // file system
@@ -95,22 +124,57 @@ static void MX_SPI1_Init(void);
 static void MX_USART1_UART_Init(void);
 
 void startSdTask(void const * argument);
-void startT25Task(void const * argument);
 void startHttpTask(void const * argument);
-void startT30Task(void const * argument);
 void startTemperatureTask(void const * argument);
-void startT3Task(void const * argument);
-void startT6Task(void const * argument);
 void startHumidityTask(void const * argument);
-void startT11Task(void const * argument);
-void startT14Task(void const * argument);
 void startPressureTask(void const * argument);
-void startT18Task(void const * argument);
-void startT20Task(void const * argument);
 
+
+//TEMP TASK
+void startT1Task(void const * argument);
+void startT2Task(void const * argument);
+void startT3Task(void const * argument);
+void startT4Task(void const * argument);
+void startT5Task(void const * argument);
+void startT6Task(void const * argument);
+
+
+//HUM TASK
+void startT8Task(void const * argument);
+void startT9Task(void const * argument);
+void startT10Task(void const * argument);
+void startT11Task(void const * argument);
+void startT12Task(void const * argument);
+void startT13Task(void const * argument);
+
+
+//Press TASK
+void startT15Task(void const * argument);
+void startT16Task(void const * argument);
+void startT17Task(void const * argument);
+void startT18Task(void const * argument);
+
+
+
+//SD Task
+void startT20Task(void const * argument);
+void startT21Task(void const * argument);
+void startT22Task(void const * argument);
+
+
+//Http Task
+
+
+void startT24Task(void const * argument);
+void startT25Task(void const * argument);
 
 
 int getDataString(char *buf, int size);
+
+
+void Send_Uart (char *string);
+void Send_Uart (char *string, long val);
+void Send_Uart (int id, long val);
 
 /* USER CODE BEGIN PFP */
 
@@ -177,48 +241,139 @@ int main(void)
 
 	/* Create the thread(s) */
 	/* definition and creation of defaultTask */
-
-	osThreadDef(presTask, startPressureTask, osPriorityRealtime 0, 256);
-	pressureTaskHandle = osThreadCreate(osThread(pressureTask), NULL);
-
-	osThreadDef(t18Task, startT18Task, osPriorityAboveNormal, 0, 256);
-	t18TaskHandle = osThreadCreate(osThread(t18Task), NULL);
-
-	osThreadDef(t20Task, startT20Task, osPriorityNormal, 0, 256);
-	t20TaskHandle = osThreadCreate(osThread(t20Task), NULL);
+	osThreadDef(tempTask, startTemperatureTask, osPriorityRealtime, 0, 128);
+	tempTaskHandle = osThreadCreate(osThread(tempTask), NULL);
 
 
-	osThreadDef(humTask, startHumidityTask, osPriorityRealtime, 0, 256);
-	humidityTaskHandle = osThreadCreate(osThread(humidtyTask), NULL);
+	osThreadDef(t1Task, startT1Task, osPriorityLow, 0, 128); //P1
+	t1TaskHandle = osThreadCreate(osThread(t1Task), NULL);
+	vTaskSuspend(t1TaskHandle);
 
-	osThreadDef(t11Task, startT11Task, osPriorityAboveNormal, 0, 256);
-	t11TaskHandle = osThreadCreate(osThread(t11Task), NULL);
 
-	osThreadDef(t14Task, startT14Task, osPriorityNormal, 0, 256);
-	t14TaskHandle = osThreadCreate(osThread(t14Task), NULL);
+	osThreadDef(t2Task, startT2Task, osPriorityNormal, 0, 128);  //P3
+	t2TaskHandle = osThreadCreate(osThread(t2Task), NULL);
+	vTaskSuspend(t2TaskHandle);
 
-	osThreadDef(tempTask, startTemperatureTask, osPriorityRealtime, 0, 256);
-	temperatureTaskHandle = osThreadCreate(osThread(temperatureTask), NULL);
 
-	osThreadDef(t3Task, startT3Task, osPriorityAboveNormal, 0, 256);
+	osThreadDef(t3Task, startT3Task, osPriorityNormal, 0, 128); //P3
 	t3TaskHandle = osThreadCreate(osThread(t3Task), NULL);
+	vTaskSuspend(t3TaskHandle);
 
-	osThreadDef(t6Task, startT6Task, osPriorityNormal, 0, 256);
+
+	osThreadDef(t4Task, startT4Task, osPriorityLow, 0, 128); //P1
+	t4TaskHandle = osThreadCreate(osThread(t4Task), NULL);
+	vTaskSuspend(t4TaskHandle);
+
+
+	osThreadDef(t5Task, startT5Task, osPriorityHigh, 0, 128); //5
+	t5TaskHandle = osThreadCreate(osThread(t5Task), NULL);
+	vTaskSuspend(t5TaskHandle);
+
+
+	osThreadDef(t6Task, startT6Task, osPriorityHigh, 0, 128); //P5
 	t6TaskHandle = osThreadCreate(osThread(t6Task), NULL);
+	vTaskSuspend(t6TaskHandle);
 
 
-	osThreadDef(sdTask, startSdTask, osPriorityRealtime, 0, 256);
+	//	/* definition and creation of humTask */
+	osThreadDef(humTask, startHumidityTask, osPriorityRealtime, 0, 128);
+	humTaskHandle = osThreadCreate(osThread(humTask), NULL);
+
+
+	osThreadDef(t8Task, startT8Task, osPriorityBelowNormal, 0, 128); //P2
+	t8TaskHandle = osThreadCreate(osThread(t8Task), NULL);
+	vTaskSuspend(t8TaskHandle);
+
+
+	osThreadDef(t9Task, startT9Task, osPriorityNormal, 0, 128); //P3
+	t9TaskHandle = osThreadCreate(osThread(t9Task), NULL);
+	vTaskSuspend(t9TaskHandle);
+
+
+	osThreadDef(t10Task, startT10Task, osPriorityNormal, 0, 128); //P3
+	t10TaskHandle = osThreadCreate(osThread(t10Task), NULL);
+	vTaskSuspend(t10TaskHandle);
+
+
+	osThreadDef(t11Task, startT11Task, osPriorityBelowNormal, 0, 128); //P2
+	t11TaskHandle = osThreadCreate(osThread(t11Task), NULL);
+	vTaskSuspend(t11TaskHandle);
+
+
+	osThreadDef(t12Task, startT12Task, osPriorityHigh, 0, 128); //P5
+	t12TaskHandle = osThreadCreate(osThread(t12Task), NULL);
+	vTaskSuspend(t12TaskHandle);
+
+
+	osThreadDef(t13Task, startT13Task, osPriorityHigh, 0, 128); //P5
+	t13TaskHandle = osThreadCreate(osThread(t13Task), NULL);
+	vTaskSuspend(t13TaskHandle);
+	//
+	//	//
+	//	//	/* definition and creation of pressTask */
+	osThreadDef(pressTask, startPressureTask, osPriorityRealtime, 0, 128);
+	pressTaskHandle = osThreadCreate(osThread(pressTask), NULL);
+
+
+	osThreadDef(t15Task, startT15Task, osPriorityNormal, 0, 128); //P3
+	t15TaskHandle = osThreadCreate(osThread(t15Task), NULL);
+	vTaskSuspend(t15TaskHandle);
+
+
+	osThreadDef(t16Task, startT16Task, osPriorityNormal, 0, 128); //P3
+	t16TaskHandle = osThreadCreate(osThread(t16Task), NULL);
+	vTaskSuspend(t16TaskHandle);
+
+
+	osThreadDef(t17Task, startT17Task, osPriorityHigh, 0, 128); //P5
+	t17TaskHandle = osThreadCreate(osThread(t17Task), NULL);
+	vTaskSuspend(t17TaskHandle);
+
+
+	osThreadDef(t18Task, startT18Task, osPriorityHigh, 0, 128);  //P6
+	t18TaskHandle = osThreadCreate(osThread(t18Task), NULL);
+	vTaskSuspend(t18TaskHandle);
+
+	//
+	//	//
+	//	//	/* definition and creation of sdTask */
+	osThreadDef(sdTask, startSdTask, osPriorityRealtime, 0, 128);
 	sdTaskHandle = osThreadCreate(osThread(sdTask), NULL);
 
-	osThreadDef(t25Task, startT25Task, osPriorityNormal, 0, 256);
-	t25TaskHandle = osThreadCreate(osThread(t25Task), NULL);
+
+	osThreadDef(t20Task, startT20Task, osPriorityAboveNormal, 0, 128); //P4
+	t20TaskHandle = osThreadCreate(osThread(t20Task), NULL);
+	vTaskSuspend(t20TaskHandle);
 
 
-	osThreadDef(httpTask, startHttpTask, osPriorityRealtime, 0, 256);
+	osThreadDef(t21Task, startT21Task, osPriorityHigh, 0, 128); //P5
+	t21TaskHandle = osThreadCreate(osThread(t21Task), NULL);
+	vTaskSuspend(t21TaskHandle);
+
+
+	osThreadDef(t22Task, startT22Task, osPriorityHigh, 0, 128); //P5
+	t22TaskHandle = osThreadCreate(osThread(t22Task), NULL);
+	vTaskSuspend(t22TaskHandle);
+
+
+
+
+
+	//
+	//	//
+	osThreadDef(httpTask, startHttpTask, osPriorityRealtime, 0, 128);
 	httpTaskHandle = osThreadCreate(osThread(httpTask), NULL);
 
-	osThreadDef(t30Task, startT30Task, osPriorityNormal, 0, 256);
-	t30TaskHandle = osThreadCreate(osThread(t30Task), NULL);
+
+	osThreadDef(t24Task, startT24Task, osPriorityHigh, 0, 128);
+	t24TaskHandle = osThreadCreate(osThread(t24Task), NULL);
+	vTaskSuspend(t24TaskHandle);
+
+
+	osThreadDef(t25Task, startT25Task, osPriorityHigh, 0, 128);
+	t25TaskHandle = osThreadCreate(osThread(t25Task), NULL);
+	vTaskSuspend(t25TaskHandle);
+
 	//
 	//
 
@@ -239,6 +394,27 @@ int main(void)
 		/* USER CODE BEGIN 3 */
 	}
 	/* USER CODE END 3 */
+}
+
+void Send_Uart (char *string) {
+	HAL_UART_Transmit(&huart1, (uint8_t *)string, strlen (string), 100);
+}
+
+void Send_Uart (char *string, long val) {
+	char buf[100];
+	snprintf(buf, 100, "%s%lu\n\r",
+			string,
+			val);
+	Send_Uart(buf);
+}
+
+
+void Send_Uart (int id, long val) {
+	char buf[100];
+	snprintf(buf, 100, "t%d:%lu\n\r",
+			id,
+			val);
+	Send_Uart(buf);
 }
 
 /**
@@ -442,113 +618,223 @@ static void MX_GPIO_Init(void)
 void startTemperatureTask(void const * argument) {
 	/* USER CODE BEGIN 5 */
 	while(1) {
-		xTaskNotify(t3TaskHandle, 0x0, eNoAction);
-		xTaskNotify(t6TaskHandle, 0x0, eNoAction);
 		osDelay(1000);
+		Send_Uart(0,0);
+		vTaskResume(t1TaskHandle);
 	}
 	/* USER CODE END 5 */
+}
+
+
+void startT1Task(void const * argument) {
+	while(1) {
+		Send_Uart(1, 0);
+		vTaskResume(t2TaskHandle);
+		vTaskSuspend(NULL);
+	}
+}
+
+void startT2Task(void const * argument) {
+	while(1) {
+		Send_Uart(2, 0);
+		I2CReader::getInstance()->wait();
+		vTaskResume(t3TaskHandle);
+		vTaskSuspend(NULL);
+	}
 }
 
 void startT3Task(void const * argument) {
 	TemperatureReader * reader = sensorFactory->createTemperatureReader();
 	I2CReader::getInstance()->init(&hi2c1, reader);
 	while(1) {
-		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
-			Send_Uart("T0:",0);
-			Send_Uart("T1:",0);
-			Send_Uart("T2:",0);
-			long old = HAL_GetTick();
-			float value = I2CReader::getInstance()->getData(&hi2c1, reader);
-			WeatherData::getInstance()->updateTemperature(value);
-			Send_Uart("T3:",HAL_GetTick() - old);
-		}
+		long old = HAL_GetTick();
+		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
+		WeatherData::getInstance()->updateTemperature(value);
+		I2CReader::getInstance()->release();
+		Send_Uart(3, HAL_GetTick() - old);
+		vTaskResume(t4TaskHandle);
+		vTaskSuspend(NULL);
+	}
+}
+
+void startT4Task(void const * argument) {
+	while(1) {
+		Send_Uart(4, 0);
+		vTaskResume(t5TaskHandle);
+		vTaskSuspend(NULL);
+	}
+}
+
+void startT5Task(void const * argument) {
+	while(1) {
+		Send_Uart(5, 0);
+		WeatherData::getInstance()->semaphoreWait();
+		vTaskResume(t6TaskHandle);
+		vTaskSuspend(NULL);
 	}
 }
 
 void startT6Task(void const * argument) {
 	while(1) {
-		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
-			long old = HAL_GetTick();
-			WeatherData::getInstance()->calculateData();
-		}
+		long old = HAL_GetTick();
+		WeatherData::getInstance()->calculateData();
+		WeatherData::getInstance()->semaphoreRelease();
+		Send_Uart(6, HAL_GetTick() - old);
+		vTaskSuspend(NULL);
 	}
 }
-
 
 void startHumidityTask(void const * argument) {
-	/* USER CODE BEGIN 5 */
 	while(1) {
-		xTaskNotify(t14TaskHandle, 0x0, eNoAction);
 		osDelay(1000);
+		Send_Uart(7, 0);
+		vTaskResume(t8TaskHandle);
 	}
-	/* USER CODE END 5 */
 }
 
-void startT11Task(void const * argument) {
+
+void startT8Task(void const * argument) {
+	while(1) {
+		Send_Uart(8, 0);
+		vTaskResume(t9TaskHandle);
+		vTaskSuspend(NULL);
+	}
+}
+
+void startT9Task(void const * argument) {
+	while(1) {
+		Send_Uart(9, 0);
+		I2CReader::getInstance()->wait();
+		vTaskResume(t10TaskHandle);
+		vTaskSuspend(NULL);
+	}
+}
+
+void startT10Task(void const * argument) {
 	HumidityReader *reader = sensorFactory->createHumidityReader();
 	I2CReader::getInstance()->init(&hi2c1, reader);
 	while(1) {
-		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
-			long old = HAL_GetTick();
-			float value = I2CReader::getInstance()->getData(&hi2c1, reader);
-			WeatherData::getInstance()->updateHumidity(value);
-		}
+		long old = HAL_GetTick();
+		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
+		WeatherData::getInstance()->updateHumidity(value);
+		I2CReader::getInstance()->release();
+		Send_Uart(10, HAL_GetTick() - old);
+		vTaskResume(t11TaskHandle);
+		vTaskSuspend(NULL);
 	}
 }
 
-void startT14Task(void const * argument) {
+void startT11Task(void const * argument) {
 	while(1) {
-		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
-			long old = HAL_GetTick();
-			WeatherData::getInstance()->calculateData();
-		}
+		Send_Uart(11, 0);
+		vTaskResume(t12TaskHandle);
+		vTaskSuspend(NULL);
 	}
 }
+
+void startT12Task(void const * argument) {
+	while(1) {
+		Send_Uart(12, 0);
+		WeatherData::getInstance()->semaphoreWait();
+		vTaskResume(t13TaskHandle);
+		vTaskSuspend(NULL);
+	}
+}
+
+void startT13Task(void const * argument) {
+	while(1) {
+		long old = HAL_GetTick();
+		WeatherData::getInstance()->calculateData();
+		WeatherData::getInstance()->semaphoreRelease();
+		Send_Uart(10, HAL_GetTick() - old);
+		vTaskSuspend(NULL);
+	}
+}
+
 
 void startPressureTask(void const * argument) {
-	/* USER CODE BEGIN 5 */
 	while(1) {
-		xTaskNotify(t18TaskHandle, 0x0, eNoAction);
-		xTaskNotify(t20TaskHandle, 0x0, eNoAction);
 		osDelay(1000);
+		Send_Uart(14, 0);
+		vTaskResume(t15TaskHandle);
 	}
-	/* USER CODE END 5 */
 }
 
-void startT18Task(void const * argument) {
+
+void startT15Task(void const * argument) {
+	while(1) {
+		Send_Uart(15, 0);
+		I2CReader::getInstance()->wait();
+		vTaskResume(t16TaskHandle);
+		vTaskSuspend(NULL);
+	}
+}
+
+void startT16Task(void const * argument) {
 	PressureReader *reader = sensorFactory->createPressureReader();
 	I2CReader::getInstance()->init(&hi2c1, reader);
 	while(1) {
-		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
-			long old = HAL_GetTick();
-			float value = I2CReader::getInstance()->getData(&hi2c1, reader);
-			WeatherData::getInstance()->updatePressure(value);
-		}
+		long old = HAL_GetTick();
+		float value = I2CReader::getInstance()->getData(&hi2c1, reader);
+		WeatherData::getInstance()->updatePressure(value);
+		I2CReader::getInstance()->release();
+		Send_Uart(16, HAL_GetTick() - old);
+		vTaskResume(t17TaskHandle);
+		vTaskSuspend(NULL);
 	}
 }
 
-void startT20Task(void const * argument) {
+void startT17Task(void const * argument) {
 	while(1) {
-		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
-			long old = HAL_GetTick();
-			WeatherData::getInstance()->calculateData();
-		}
+		Send_Uart(17, 0);
+		WeatherData::getInstance()->semaphoreWait();
+		vTaskResume(t18TaskHandle);
+		vTaskSuspend(NULL);
 	}
 }
+
+void startT18Task(void const * argument) {
+	while(1) {
+		long old = HAL_GetTick();
+		WeatherData::getInstance()->calculateData();
+		WeatherData::getInstance()->semaphoreRelease();
+		Send_Uart(18, HAL_GetTick());
+		vTaskSuspend(NULL);
+	}
+}
+
 
 void startSdTask(void const * argument) {
 	while(1) {
-		Send_Uart("task04\n");
-		xTaskNotify(t25TaskHandle, 0x0, eNoAction);
 		osDelay(60000);
+		Send_Uart(19,0);
+		vTaskResume(t20TaskHandle);
 	}
 }
 
 
-void startT25Task(void const * argument) {
+void startT20Task(void const * argument) {
+	while(1) {
+		Send_Uart(20, 0);
+		vTaskResume(t21TaskHandle);
+		vTaskSuspend(NULL);
+	}
+}
+
+void startT21Task(void const * argument) {
+	while(1) {
+		Send_Uart(21, 0);
+		WeatherData::getInstance()->semaphoreWait();
+		vTaskResume(t22TaskHandle);
+		vTaskSuspend(NULL);
+	}
+}
+
+void startT22Task(void const * argument) {
 	char buf[100];
 	fresult = f_mount(&fs, "/", 1);
 	while(1) {
+		long old = HAL_GetTick();
 		fresult = f_open(&fil, "wth.csv", FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
 
 		fresult = f_lseek(&fil, f_size(&fil));
@@ -560,27 +846,42 @@ void startT25Task(void const * argument) {
 
 
 		f_close (&fil);
+		WeatherData::getInstance()->semaphoreRelease();
+		Send_Uart(22, HAL_GetTick() - old);
+		vTaskSuspend(NULL);
 	}
 }
+
 
 void startHttpTask(void const * argument) {
 	while(1) {
-		xTaskNotify(t30TaskHandle, 0x0, eNoAction);
 		osDelay(60000);
+		Send_Uart(23,0);
+		vTaskResume(t24TaskHandle);
 	}
 }
 
-
-void startT30Task(void const * argument) {
+void startT24Task(void const * argument) {
 	while(1) {
-		if (xTaskNotifyWait(0, 0, NULL, portMAX_DELAY) == pdTRUE ) {
-			char buf[100];
-			long old = HAL_GetTick();
-			int len = WeatherData::getInstance()->getDataString(buf, sizeof(buf));
-			HAL_UART_Transmit(&huart3, (uint8_t *) buf, len, 100);
-		}
+		Send_Uart(24, 0);
+		WeatherData::getInstance()->semaphoreWait();
+		vTaskResume(t25TaskHandle);
+		vTaskSuspend(NULL);
 	}
 }
+
+void startT25Task(void const * argument) {
+	while(1) {
+		long old = HAL_GetTick();
+		char buf[100];
+		int len = WeatherData::getInstance()->getDataString(buf, sizeof(buf));
+		HAL_UART_Transmit(&huart3, (uint8_t *) buf, len, 100);
+		WeatherData::getInstance()->semaphoreRelease();
+		Send_Uart(25, HAL_GetTick() - old);
+		vTaskSuspend(NULL);
+	}
+}
+
 
 /**
  * @brief  This function is executed in case of error occurrence.

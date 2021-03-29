@@ -31,21 +31,15 @@ WeatherData::~WeatherData() {
 }
 
 void WeatherData::updateTemperature(float value) {
-	semaphoreWait();
 	temperature = temperature < -99.0 ? temperature : (temperature + value) / 2;
-	semaphoreRelease();
 }
 
 void WeatherData::updateHumidity(float value) {
-	semaphoreWait();
 	humidity = humidity < -1.0 ? humidity : (humidity + value) / 2;
-	semaphoreRelease();
 }
 
 void WeatherData::updatePressure(float value) {
-	semaphoreWait();
 	pressure = pressure < -1.0 ? pressure : (pressure + value) / 2;
-	semaphoreRelease();
 }
 
 void WeatherData::calculateData() {
@@ -81,13 +75,13 @@ float WeatherData::calcDewpoint(float temp, float hum) {
 
 
 int WeatherData::getDataString(char *buf, int size) {
-	semaphoreWait();
 	int len = snprintf(buf, size, "%0.3f,%0.3f,%0.3f,%0.3f,%0.3f\n",
 			temperature,
 			humidity,
 			pressure,
 			wetbulb,
 			dewpoint);
-	semaphoreRelease();
 	return len;
 }
+
+
